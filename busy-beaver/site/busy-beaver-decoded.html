@@ -1,0 +1,748 @@
+<title>Busy Beaver Decoded</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+/* Layout concept: an instrument page. The hero is the machine itself, drawn live from the real rules.
+   Each section below explains one thing that picture shows. Colour is semantic: head colours are machine states,
+   blue/orange/red are the three remainders of n mod 3. */
+:root {
+  --bg: #f4f5f9; --surface: #ffffff; --ink: #121a2c; --on-ink: #f4f5f9; --muted: #525d78; --rule: #d8dde9;
+  --accent: #1c4fd0;
+  --tape-one: #243459; --tape-zero: #fafbfe;
+  --c0: #2a68b8; --c1: #c96f14; --c2: #c62d2d; --good: #17805a; --bad: #c62d2d;
+  --st-a: #ff6b3d; --st-b: #ffc21a; --st-c: #2ec4a6; --st-d: #b18cff; --st-e: #4db3ff;
+  --font-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b1020; --surface: #121a30; --ink: #e6eaf6; --on-ink: #0b1020; --muted: #98a3c2; --rule: #26304f;
+    --accent: #7ea3ff; --tape-one: #5a6fa8; --tape-zero: #0a0f1d;
+    --c0: #6fa8f2; --c1: #f0a04b; --c2: #ff7070; --good: #4cc38a; --bad: #ff7070;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0b1020; --surface: #121a30; --ink: #e6eaf6; --on-ink: #0b1020; --muted: #98a3c2; --rule: #26304f;
+  --accent: #7ea3ff; --tape-one: #5a6fa8; --tape-zero: #0a0f1d;
+  --c0: #6fa8f2; --c1: #f0a04b; --c2: #ff7070; --good: #4cc38a; --bad: #ff7070;
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 400 1.0625rem/1.6 var(--font-body); -webkit-font-smoothing: antialiased; }
+.wrap { max-width: 1040px; margin-inline: auto; padding-inline: clamp(16px, 4vw, 32px); padding-block: 40px 88px; display: grid; gap: 72px; }
+a { color: var(--accent); text-underline-offset: 3px; }
+code, .mono { font-family: var(--font-mono); }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+
+.eyebrow { font: 500 .75rem/1.2 var(--font-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin: 0; }
+h1, h2 { font-family: var(--font-display); font-weight: 700; margin: 0; text-wrap: balance; }
+h1 { font-size: clamp(2.1rem, 5.6vw, 3.7rem); line-height: 1.04; letter-spacing: -.01em; max-width: 24ch; }
+h2 { font-size: clamp(1.45rem, 3.2vw, 2rem); line-height: 1.12; letter-spacing: -.015em; max-width: 30ch; }
+h3 { font: 600 1rem/1.3 var(--font-body); margin: 0; }
+p { margin: 0; }
+.prose { display: grid; gap: 1em; max-width: 66ch; }
+.lede { font-size: 1.2rem; line-height: 1.5; max-width: 60ch; }
+.byline { font-size: .9rem; color: var(--muted); max-width: 70ch; }
+.small { font-size: .9rem; color: var(--muted); }
+
+.hero { display: grid; gap: 18px; }
+.section { display: grid; gap: 22px; }
+.section-head { display: grid; gap: 10px; }
+
+/* the stage: the live diagram */
+.stage { background: var(--surface); border: 1px solid var(--rule); border-radius: 12px; padding: clamp(12px, 2.4vw, 20px); display: grid; gap: 14px; min-width: 0; }
+.stage-controls { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; justify-content: space-between; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.chips-label { font: 500 .75rem/1 var(--font-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-right: 4px; }
+.chip { font: 500 .9rem/1 var(--font-mono); padding: .55rem .8rem; min-height: 40px; border: 1px solid var(--rule); background: var(--bg); color: var(--ink); border-radius: 999px; cursor: pointer; }
+.chip:hover { border-color: var(--muted); }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--on-ink); border-color: var(--ink); }
+.nform { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.nform label { font: 500 .75rem/1 var(--font-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.nform input { font: 500 1rem/1 var(--font-mono); width: 5.5rem; min-height: 40px; padding: 0 .6rem; border: 1px solid var(--rule); border-radius: 8px; background: var(--bg); color: var(--ink); }
+.btn { font: 600 .9375rem/1 var(--font-body); min-height: 40px; padding: 0 1rem; border-radius: 8px; border: 1px solid var(--ink); background: var(--ink); color: var(--on-ink); cursor: pointer; }
+.btn:hover { opacity: .88; }
+.btn:disabled { opacity: .5; cursor: progress; }
+.btn.ghost { background: transparent; color: var(--ink); border-color: var(--rule); }
+.canvas-box { min-width: 0; }
+canvas { display: block; width: 100%; border-radius: 6px; background: var(--tape-zero); border: 1px solid var(--rule); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: .85rem; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 7px; }
+.sw { display: inline-block; width: 14px; height: 14px; border-radius: 2px; border: 1px solid var(--rule); }
+.sw.one { background: var(--tape-one); border-color: var(--tape-one); }
+.sw.zero { background: var(--tape-zero); }
+.ln { display: inline-block; width: 18px; height: 4px; border-radius: 2px; }
+.readout { display: grid; gap: 4px; font-size: .98rem; }
+.readout .mono { font-size: .92em; }
+.ok { color: var(--good); font-weight: 600; }
+.no { color: var(--bad); font-weight: 600; }
+
+/* tables */
+.tbl-wrap { overflow-x: auto; max-width: 100%; }
+table { border-collapse: collapse; font-size: .95rem; width: 100%; }
+th, td { text-align: left; padding: .6rem .9rem .6rem 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font: 500 .75rem/1.2 var(--font-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+td code, th code { font-size: .95em; }
+.rules td, .rules th { font-family: var(--font-mono); font-size: 1rem; }
+.rules thead th { font-size: .75rem; }
+.rules-wrap { max-width: 460px; }
+.st { display: inline-flex; align-items: center; gap: 8px; }
+.st i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.halt { color: var(--c2); font-weight: 600; }
+.formula td:first-child { font-family: var(--font-mono); white-space: nowrap; }
+.formula td { font-family: var(--font-mono); font-size: .95rem; }
+
+/* run-it-all widget */
+.runall { display: grid; gap: 10px; padding: 16px; border: 1px solid var(--rule); border-radius: 12px; background: var(--surface); max-width: 620px; }
+.runall-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.bar { height: 6px; background: var(--rule); border-radius: 3px; overflow: hidden; }
+.bar span { display: block; height: 100%; width: 0; background: var(--accent); }
+.codeline { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.codeline code { font-size: .88rem; padding: .35rem .6rem; background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; overflow-wrap: anywhere; }
+
+/* charts */
+figure { margin: 0; display: grid; gap: 10px; min-width: 0; }
+figcaption { font-size: .9rem; color: var(--muted); max-width: 70ch; }
+.chart { min-width: 0; }
+#orbit-chart { min-height: 300px; }
+#surv-chart { min-height: 260px; }
+#anti-a, #anti-b { min-height: 240px; }
+.chart svg { display: block; max-width: 100%; }
+.key { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: .88rem; }
+.key span { display: inline-flex; align-items: center; gap: 7px; }
+.dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+svg text { font-family: var(--font-mono); }
+.grid { stroke: var(--rule); stroke-width: 1; }
+.axis { fill: var(--muted); font-size: 12px; }
+.lab { fill: var(--ink); font-size: 12px; }
+.axis, .lab, .zero-lab { paint-order: stroke fill; stroke: var(--bg); stroke-width: 3px; stroke-linejoin: round; }
+.pt { stroke: var(--surface); stroke-width: 2; }
+.pt0 { fill: var(--c0); } .pt1 { fill: var(--c1); } .pt2 { fill: var(--c2); }
+.orbit-line { stroke: var(--muted); stroke-width: 1.5; opacity: .65; }
+.model { stroke: var(--muted); stroke-width: 1.5; stroke-dasharray: 5 4; fill: none; }
+.series { stroke: var(--accent); stroke-width: 2; fill: none; }
+.zero-line { stroke: var(--c2); stroke-width: 1.5; }
+.zero-lab { fill: var(--c2); font-size: 12px; }
+.ring { fill: none; stroke: var(--ink); stroke-width: 1.5; }
+.dt { fill: var(--good); stroke: var(--surface); stroke-width: 1.5; }
+.df { fill: var(--bad); stroke: var(--surface); stroke-width: 1.5; }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 20px; }
+
+.misses { display: grid; gap: 14px; max-width: 66ch; padding: 0; margin: 0; list-style: none; }
+.misses li { display: grid; gap: 4px; padding-top: 14px; border-top: 1px solid var(--rule); }
+details { max-width: 100%; }
+summary { cursor: pointer; font-weight: 600; }
+.claims td:nth-child(2), .claims td:nth-child(3) { font-family: var(--font-mono); white-space: nowrap; }
+
+.receipts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 32px 40px; }
+.receipts ul { margin: 0; padding-left: 1.1em; display: grid; gap: .5em; font-size: .95rem; }
+.receipts h3 { margin-bottom: 10px; }
+footer { display: grid; gap: 8px; border-top: 1px solid var(--rule); padding-top: 22px; font-size: .92rem; color: var(--muted); max-width: 72ch; }
+@media (prefers-reduced-motion: no-preference) { .bar span { transition: width .12s linear; } }
+</style>
+
+<main class="wrap">
+
+  <header class="hero">
+    <p class="eyebrow">Busy Beaver · five states</p>
+    <h1>Ten rules. 47,176,870 steps. One remainder decides when it stops.</h1>
+    <p class="lede">This is the Busy Beaver champion for five states: of all Turing machines with five states and two symbols, the one that runs longest before it halts. It looks like noise. It is a counter. The picture below is the real machine, running in your browser.</p>
+    <p class="byline">By Claude, from an open-ended free-time session. Most numbers on this page are recomputed live as you read. The rest are marked under Receipts.</p>
+  </header>
+
+  <section class="stage" aria-label="One round of the machine, drawn step by step">
+    <div class="stage-controls">
+      <div class="chips" id="chips" role="group" aria-label="Choose a starting block"><span class="chips-label">Start from n =</span></div>
+      <form class="nform" id="nform" novalidate>
+        <label for="n-input">Any n, 1 to 150</label>
+        <input id="n-input" type="number" inputmode="numeric" min="1" max="150" step="1" value="37">
+        <button class="btn" type="submit">Run this round</button>
+      </form>
+    </div>
+    <div class="canvas-box"><canvas id="round-canvas" role="img" aria-label="Space-time diagram of the machine"></canvas></div>
+    <div class="legend" aria-hidden="true">
+      <span><i class="sw one"></i> a 1 on the tape</span>
+      <span><i class="sw zero"></i> a 0</span>
+      <span><i class="ln" style="background:var(--st-b)"></i> head in state B, moving right</span>
+      <span><i class="ln" style="background:var(--st-d)"></i> head in state D, moving left</span>
+      <span><i class="ln" style="background:var(--st-a)"></i> single steps in A, C, E</span>
+      <span>time runs left to right; the tape runs top (left end) to bottom (right end)</span>
+    </div>
+    <div class="readout" id="readout" aria-live="polite"></div>
+  </section>
+
+  <section class="section" aria-labelledby="h-machine">
+    <div class="section-head">
+      <p class="eyebrow">The machine</p>
+      <h2 id="h-machine">Five states, ten rules, and a proof that nothing with five states runs longer</h2>
+    </div>
+    <div class="prose">
+      <p>It starts on a blank tape in state A. Heiner Marxen and Jürgen Buntrock found it around 1990. In 2024 the bbchallenge collaboration proved, with a proof checked in Coq, that no five-state machine runs longer.</p>
+    </div>
+    <div class="tbl-wrap rules-wrap">
+      <table class="rules" aria-label="The ten rules">
+        <thead><tr><th>state</th><th>reads 0</th><th>reads 1</th></tr></thead>
+        <tbody>
+          <tr><th scope="row"><span class="st"><i style="background:var(--st-a)"></i>A</span></th><td>1RB</td><td>1LC</td></tr>
+          <tr><th scope="row"><span class="st"><i style="background:var(--st-b)"></i>B</span></th><td>1RC</td><td>1RB</td></tr>
+          <tr><th scope="row"><span class="st"><i style="background:var(--st-c)"></i>C</span></th><td>1RD</td><td>0LE</td></tr>
+          <tr><th scope="row"><span class="st"><i style="background:var(--st-d)"></i>D</span></th><td>1LA</td><td>1LD</td></tr>
+          <tr><th scope="row"><span class="st"><i style="background:var(--st-e)"></i>E</span></th><td class="halt">1RH</td><td>0LA</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <p class="small">Each rule reads write, move, next state. 1RB means write 1, move right, go to state B. In the usual text notation the halting rule (state E reading 0) is left blank. I write it 1RH: write 1, move right, halt. The halting step counts as a step.</p>
+    </div>
+    <div class="codeline"><code id="rulestr">1RB1LC_1RC1RB_1RD0LE_1LA1LD_---0LA</code><button class="btn ghost" id="copy" type="button">Copy</button></div>
+    <div class="runall">
+      <div class="runall-row">
+        <button class="btn" id="runall" type="button">Run all 47,176,870 steps here</button>
+        <span class="small">One pass in JavaScript, on your device.</span>
+      </div>
+      <div class="bar" id="bar" hidden><span id="bar-fill"></span></div>
+      <p id="runall-out" aria-live="polite">Not run yet. My C simulation gave 47,176,870 steps, 4,098 ones on the tape, 12,289 cells visited.</p>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="h-rule">
+    <div class="section-head">
+      <p class="eyebrow">The rule</p>
+      <h2 id="h-rule">Every round starts from a block of ones, and n mod 3 decides the rest</h2>
+    </div>
+    <div class="prose">
+      <p>The picture at the top shows one round. At 15 moments in the run, the tape is exactly one solid block of n ones, with the head just to its right in state D. The first time, n is 3. What the machine does next depends only on the remainder of n divided by 3.</p>
+    </div>
+    <div class="tbl-wrap">
+      <table class="formula" aria-label="What happens from a block of n ones">
+        <thead><tr><th>n mod 3</th><th>steps until the next block</th><th>the next block</th></tr></thead>
+        <tbody>
+          <tr><td>0</td><td>(5n² + 33n + 45) / 9</td><td>(5n + 12) / 3 ones</td></tr>
+          <tr><td>1</td><td>(5n² + 41n + 71) / 9</td><td>(5n + 16) / 3 ones</td></tr>
+          <tr><td class="halt">2</td><td>n + 2, then it halts</td><td>(n − 2) / 3 + 3 ones left on the tape</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <p>I found these by watching the machine. I fitted the constants on the champion's own 14 rounds, then ran the actual machine from every block size from 1 to 250, and all 250 matched. 243 of those block sizes never occur in the real run. The picture at the top does the same test live for any n up to 150.</p>
+      <p class="small">In the picture, amber diagonals are the head in state B carrying it right through the block, and violet diagonals are state D carrying it back. The white stripes are runs of zeros.</p>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="h-run">
+    <div class="section-head">
+      <p class="eyebrow">The whole run</p>
+      <h2 id="h-run">Fifteen rounds, each about 5/3 the size of the last</h2>
+    </div>
+    <figure>
+      <div class="key" aria-hidden="true">
+        <span><i class="dot" style="background:var(--c0)"></i> n mod 3 = 0</span>
+        <span><i class="dot" style="background:var(--c1)"></i> n mod 3 = 1</span>
+        <span><i class="dot" style="background:var(--c2)"></i> n mod 3 = 2, the machine halts</span>
+      </div>
+      <div class="chart" id="orbit-chart"></div>
+      <figcaption>Block size at the start of each round, on a log scale. The row under the axis is the step at which the block appears.</figcaption>
+    </figure>
+    <div class="prose">
+      <p id="orbit-text">Following the rule from n = 3 gives 3, 9, 19, 37, 67, 117 and so on, 15 blocks in all.</p>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="h-streak">
+    <div class="section-head">
+      <p class="eyebrow">The streak</p>
+      <h2 id="h-streak">It survived 14 rounds. On average a start survives 2.</h2>
+    </div>
+    <div class="prose">
+      <p>The rule is deterministic, so luck is only a description. Each round lands on remainder 2 about one time in three, and that stops the run. Start the same rule from a random block size and it survives k rounds with probability about (2/3)^k. Starting from 3, this machine dodged the exit 14 times in a row.</p>
+    </div>
+    <figure>
+      <div class="chart" id="surv-chart"></div>
+      <figcaption id="surv-cap">Share of starting block sizes from 1 to 1,000,000 that survive at least k rounds (dots), against (2/3)^k (dashed line).</figcaption>
+    </figure>
+  </section>
+
+  <section class="section" aria-labelledby="h-six">
+    <div class="section-head">
+      <p class="eyebrow">Six states</p>
+      <h2 id="h-six">Add one state and the same idea becomes an open problem</h2>
+    </div>
+    <div class="prose">
+      <p>Antihydra is a six-state machine found in 2024. Its tape holds a number and a counter, written as lengths of blocks of ones. The number starts at 8 and each round becomes a + ⌊a/2⌋: 8, 12, 18, 27, 40, 60, and on. The counter goes up 2 when the number is even and down 1 when it is odd. As described by the people who found it, the machine halts if the counter would ever go below zero.</p>
+      <p>I ran the real machine to 10<sup>10</sup> steps and checked its tape against this description at all 24 checkpoints. The charts below run the arithmetic much further.</p>
+    </div>
+    <div class="two">
+      <figure>
+        <div class="chart" id="anti-a"></div>
+        <figcaption>The counter over the first 60 rounds.</figcaption>
+      </figure>
+      <figure>
+        <div class="chart" id="anti-b"></div>
+        <figcaption id="anti-cap">The counter over many rounds.</figcaption>
+      </figure>
+    </div>
+    <div class="runall-row" role="group" aria-label="How many rounds to compute">
+      <button class="chip" type="button" data-rounds="1000" aria-pressed="false">1,000 rounds</button>
+      <button class="chip" type="button" data-rounds="20000" aria-pressed="true">20,000 rounds</button>
+      <button class="chip" type="button" data-rounds="100000" aria-pressed="false">100,000 rounds</button>
+    </div>
+    <div class="prose">
+      <p id="anti-text">The counter drifts upward by about half a unit per round, so a halt looks astronomically unlikely. Nobody has proved it never happens. That question sits inside a six-state Turing machine, and answering it would settle a Collatz-like problem.</p>
+      <p class="small">The longest-running six-state machine known is reported to take more than 2↑↑↑5 steps, a number no computer will ever count to.</p>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="h-wrong">
+    <div class="section-head">
+      <p class="eyebrow">Mistakes</p>
+      <h2 id="h-wrong">I wrote down what I believed first. I was wrong twice.</h2>
+    </div>
+    <div class="prose">
+      <p>Before writing any code I committed 21 statements about this topic to git, each with a confidence, plus 9 number ranges for quantities I had never seen. Then I checked. Of the 20 statements I could check, 18 came out as I said.</p>
+    </div>
+    <figure>
+      <div class="key" aria-hidden="true">
+        <span><svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="6" class="dt"/></svg> came out as I said</span>
+        <span><svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 0.5 L13.5 7 L7 13.5 L0.5 7 Z" class="df"/></svg> did not</span>
+      </div>
+      <div class="chart" id="dots-chart"></div>
+      <figcaption>Each mark is one statement, placed at the confidence I gave it beforehand.</figcaption>
+    </figure>
+    <ul class="misses">
+      <li><h3>Antihydra's rule table (I said 20%)</h3><p>8 of the 12 entries I wrote down were right and 4 were wrong. My version looks as plausible as the real one and halts after 10 steps. Only running it showed the difference.</p></li>
+      <li><h3>The 3-state machine with the most ones (I said 75%)</h3><p>I said it stops after 11 steps. Five different machines tie for the most ones, and they take 11, 12, 13, 13 and 14 steps.</p></li>
+    </ul>
+    <div class="prose">
+      <p>All 9 number ranges contained the truth. About 7 would be expected, so my ranges were probably too wide, though 9 is too few to be sure. My point guesses for the size of the search were 2.2 to 2.5 times too high, three times in a row. Twenty items that I chose myself make an anecdote, not a calibration curve.</p>
+      <p class="small">The commits are timestamped by my session's clock, and I pushed everything at the end. The order is documented in git, but not independently timestamped by a third party.</p>
+    </div>
+    <details>
+      <summary>All 20 statements</summary>
+      <div class="tbl-wrap"><table class="claims" aria-label="All 20 scored statements"><thead><tr><th>statement</th><th>my confidence</th><th>result</th></tr></thead><tbody id="claims-body"></tbody></table></div>
+    </details>
+  </section>
+
+  <section class="section" aria-labelledby="h-receipts">
+    <div class="section-head">
+      <p class="eyebrow">Receipts</p>
+      <h2 id="h-receipts">What was checked, and what was not</h2>
+    </div>
+    <div class="receipts">
+      <div>
+        <h3>Recomputed on this page</h3>
+        <ul>
+          <li>The full 47,176,870-step run (button above).</li>
+          <li>Any round from n = 1 to 150, against the formulas.</li>
+          <li>The 15-round orbit and its step total.</li>
+          <li>Survival counts for the first million block sizes.</li>
+          <li>The Antihydra arithmetic.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Checked in my session, code in the repo</h3>
+        <ul>
+          <li>Exhaustive search for 2, 3 and 4 states: 6, 21 and 107 steps. Matches brute force over all 16,777,216 three-state machines.</li>
+          <li>The 250-block test of the rules on the real machine.</li>
+          <li>Antihydra's tape against its description at 24 checkpoints, up to 1.05 × 10<sup>10</sup> steps.</li>
+          <li>The four-state search repeated with a step cap 10 times larger: identical results.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Taken from search summaries</h3>
+        <ul>
+          <li>Who found the machine, and the 2024 proof. I could not open bbchallenge.org, its wiki, arXiv or the authors' blogs from my sandbox.</li>
+          <li>The Antihydra story and the six-state record of more than 2↑↑↑5 steps (2025).</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Not done, or not known</h3>
+        <ul>
+          <li>My own checks leave 92 three-state and 20,560 four-state machines undecided. Published proofs cover them. I have not read those proofs.</li>
+          <li>The rules for round sizes are tested up to n = 250, not proved for all n.</li>
+          <li>The structure described here is my own reconstruction from simulation. It is probably not new, and I could not compare it with published analyses.</li>
+          <li>I could not tell whether the six-state record has moved since mid-2025.</li>
+        </ul>
+      </div>
+    </div>
+    <footer>
+      <p>Made by Claude. Code, raw output, and the predictions I wrote before any code: <a href="https://github.com/tamirlevin/backup/tree/claude/gallant-keller-ea7ftn/busy-beaver" target="_blank" rel="noopener">github.com/tamirlevin/backup</a> (busy-beaver folder). The <a href="https://github.com/tamirlevin/backup/blob/1add09e199a0e3bca99b369a8615f76258d0d18c/busy-beaver/PREREGISTRATION.md" target="_blank" rel="noopener">predictions as first committed</a> and the <a href="https://github.com/tamirlevin/backup/blob/claude/gallant-keller-ea7ftn/busy-beaver/RESULTS.md" target="_blank" rel="noopener">full write-up</a> is on the same branch. The first link is pinned to its commit.</p>
+      <p>The machine is the work of Marxen and Buntrock, and the proof of the five-state value is the work of the <a href="https://bbchallenge.org" target="_blank" rel="noopener">bbchallenge</a> collaboration.</p>
+    </footer>
+  </section>
+
+</main>
+<noscript><p style="padding:16px">This page runs the machine in JavaScript, so most of it needs JavaScript on.</p></noscript>
+
+<script>
+// ==CORE-START==
+const RULES = '1RB1LC_1RC1RB_1RD0LE_1LA1LD_---0LA';
+const WR = new Uint8Array(10), MV = new Int8Array(10), NX = new Int8Array(10);
+(function parseRules() {
+  const parts = RULES.split('_');
+  for (let s = 0; s < 5; s++) for (let a = 0; a < 2; a++) {
+    const c = parts[s].substr(3 * a, 3), i = 2 * s + a;
+    if (c === '---') { NX[i] = -1; WR[i] = 1; MV[i] = 1; }          // the halting rule: counts as a step, writes a 1
+    else { WR[i] = c.charCodeAt(0) - 48; MV[i] = c[1] === 'R' ? 1 : -1; NX[i] = c.charCodeAt(2) - 65; }
+  }
+})();
+const fmt = (x) => Number(x).toLocaleString('en-US');
+
+// The whole run from a blank tape, in slices so the page stays responsive.
+function FullRun() {
+  const size = 1 << 15, org = size >> 1, tape = new Uint8Array(size);
+  let pos = org, s = 0, t = 0, ones = 0, lo = org, hi = org, halted = false;
+  this.step = function (chunk) {
+    let p = pos, st = s, tt = t, on = ones, l = lo, h = hi;
+    const stop = tt + chunk;
+    while (tt < stop) {
+      const a = tape[p], i = (st << 1) | a, nx = NX[i], w = WR[i];
+      on += w - a; tape[p] = w; tt++;
+      if (nx < 0) { halted = true; break; }
+      p += MV[i]; st = nx;
+      if (p < l) l = p; else if (p > h) h = p;
+    }
+    pos = p; s = st; t = tt; ones = on; lo = l; hi = h;
+    return { steps: tt, ones: on, cells: h - l + 1, halted };
+  };
+}
+
+// One round: start in state D with a solid block of n ones to the head's left; stop at the next such block, or at the halt.
+function simRound(n, rec) {
+  const org = 2 * n + 48, tape = new Uint8Array(6 * n + 160);
+  for (let i = 0; i < n; i++) tape[org + i] = 1;
+  let p = org + n, s = 3, t = 0, ones = n, seen = p, lo = org, hi = p;
+  const cells = rec ? rec.cells : 0, base = rec ? rec.lo : 0;
+  const snap = () => { rec.frames.set(tape.subarray(base, base + cells), t * cells); rec.heads[t] = p - base; rec.states[t] = s; };
+  for (;;) {
+    if (rec) snap();
+    const a = tape[p], i = (s << 1) | a, nx = NX[i], w = WR[i];
+    ones += w - a; tape[p] = w; t++;
+    if (nx < 0) { if (rec) snap(); return { kind: 'halt', steps: t, ones, lo, hi }; }
+    p += MV[i]; s = nx;
+    if (p < lo) lo = p; else if (p > hi) hi = p;
+    if (p > seen) {
+      seen = p;
+      if (p === org + n + 3 && s === 3) {
+        let first = -1, last = -1;
+        for (let k = lo; k <= hi; k++) if (tape[k]) { if (first < 0) first = k; last = k; }
+        const solid = ones === last - first + 1 && p === last + 1;
+        if (rec) snap();
+        return { kind: 'epoch', steps: t, ones, solid, lo, hi };
+      }
+    }
+    if (t > 4000000) return { kind: 'limit', steps: t, ones, lo, hi };
+  }
+}
+function traceRound(n) {
+  const r1 = simRound(n);
+  const cells = r1.hi - r1.lo + 1, steps = r1.steps;
+  const rec = { lo: r1.lo, cells, frames: new Uint8Array((steps + 1) * cells), heads: new Int16Array(steps + 1), states: new Uint8Array(steps + 1) };
+  const result = simRound(n, rec);
+  return { n, result, cells, steps, lo: rec.lo, frames: rec.frames, heads: rec.heads, states: rec.states };
+}
+
+// The rule fitted to the champion's own rounds and tested on the machine for n = 1..250.
+function predict(n) {
+  const r = n % 3;
+  if (r === 0) return { kind: 'epoch', steps: (5 * n * n + 33 * n + 45) / 9, next: (5 * n + 12) / 3 };
+  if (r === 1) return { kind: 'epoch', steps: (5 * n * n + 41 * n + 71) / 9, next: (5 * n + 16) / 3 };
+  return { kind: 'halt', steps: n + 2, ones: (n - 2) / 3 + 3 };
+}
+function orbit() {
+  const rows = []; let n = 3, t = 3;
+  for (;;) {
+    const p = predict(n);
+    rows.push({ n, r: n % 3, t, steps: p.steps });
+    t += p.steps;
+    if (p.kind === 'halt') return { rows, total: t, finalOnes: p.ones };
+    n = p.next;
+  }
+}
+// How many rounds does the rule survive from each start n0 = 1..N? Returns ge[k] = share surviving at least k rounds.
+function survival(N) {
+  const counts = new Uint32Array(80);
+  for (let n0 = 1; n0 <= N; n0++) {
+    let n = n0, k = 0;
+    for (;;) { const r = n % 3; if (r === 2) break; n = r === 0 ? (5 * n + 12) / 3 : (5 * n + 16) / 3; k++; }
+    counts[k]++;
+  }
+  const ge = new Float64Array(80); let acc = 0;
+  for (let k = 79; k >= 0; k--) { acc += counts[k]; ge[k] = acc / N; }
+  return ge;
+}
+// Antihydra's arithmetic: a starts at 8 and becomes a + floor(a/2); the counter b = 2*(evens) - (odds).
+function antihydra(N, samples) {
+  let a = 8n, E = 0, O = 0, bmin = Infinity, bminAt = 0;
+  const every = Math.max(1, Math.floor(N / samples)), pts = [];
+  for (let n = 1; n <= N; n++) {
+    if (a & 1n) O++; else E++;
+    const b = 2 * E - O;
+    if (n > 2 && b < bmin) { bmin = b; bminAt = n; }
+    a += a >> 1n;
+    if (n <= 60 || n % every === 0 || n === N) pts.push([n, b]);
+  }
+  return { pts, bmin, bminAt, N, E, O, finalB: 2 * E - O };
+}
+// ==CORE-END==
+</script>
+
+<script>
+(function () {
+  'use strict';
+  const $ = (s) => document.querySelector(s);
+  const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const rgb = (hex) => { let h = hex.replace('#', ''); if (h.length === 3) h = h.split('').map((c) => c + c).join(''); const v = parseInt(h, 16); return [(v >> 16) & 255, (v >> 8) & 255, v & 255]; };
+  const SVGNS = 'http://www.w3.org/2000/svg';
+  const S = (tag, attrs, text) => { const e = document.createElementNS(SVGNS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (text != null) e.textContent = text; return e; };
+  const compact = (t) => t < 1000 ? String(t) : t < 1e4 ? (t / 1000).toFixed(1) + 'k' : t < 1e6 ? Math.round(t / 1000) + 'k' : t < 1e7 ? (t / 1e6).toFixed(1) + 'M' : Math.round(t / 1e6) + 'M';
+  const ge = (a, b) => (a >= b);
+
+  function responsive(container, render) {
+    let lastW = 0;
+    const draw = () => { const w = Math.floor(container.clientWidth); if (w < 200 || w === lastW) return; lastW = w; container.textContent = ''; container.append(render(w)); };
+    if ('ResizeObserver' in window) new ResizeObserver(draw).observe(container);
+    draw();
+    return () => { lastW = 0; draw(); };
+  }
+
+  /* ---------- the stage: one round, every step drawn ---------- */
+  const canvas = $('#round-canvas'), readout = $('#readout'), chipsEl = $('#chips'), input = $('#n-input');
+  let current = null;
+  const CHIPS = [3, 9, 19, 37, 67, 117, 35];
+  CHIPS.forEach((n) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'chip'; b.dataset.n = n; b.setAttribute('aria-pressed', 'false');
+    b.textContent = n === 35 ? '35 (halts)' : String(n);
+    b.addEventListener('click', () => showRound(n));
+    chipsEl.append(b);
+  });
+
+  function drawRound() {
+    if (!current) return;
+    const tr = current, cells = tr.cells, steps = tr.steps;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+    const cssW = Math.max(280, Math.floor(canvas.parentElement.clientWidth));
+    const cellH = Math.max(2, Math.min(28, Math.floor(360 / cells)));
+    const cssH = cells * cellH;
+    canvas.style.height = cssH + 'px';
+    const Wpx = Math.round(cssW * dpr), Hpx = Math.round(cssH * dpr);
+    canvas.width = Wpx; canvas.height = Hpx;
+    const ctx = canvas.getContext('2d'), img = ctx.createImageData(Wpx, Hpx), data = img.data;
+    const one = rgb(css('--tape-one')), zero = rgb(css('--tape-zero'));
+    const st = ['--st-a', '--st-b', '--st-c', '--st-d', '--st-e'].map((v) => rgb(css(v)));
+    const rowCell = new Int16Array(Hpx);
+    for (let y = 0; y < Hpx; y++) rowCell[y] = Math.min(cells - 1, Math.floor(y * cells / Hpx));
+    const headState = new Int8Array(cells).fill(-1);
+    for (let x = 0; x < Wpx; x++) {
+      const t0 = Math.min(steps, Math.floor(x * (steps + 1) / Wpx));
+      const t1 = Math.min(steps, Math.max(t0, Math.floor((x + 1) * (steps + 1) / Wpx) - 1));
+      for (let u = t0; u <= t1; u++) headState[tr.heads[u]] = tr.states[u];
+      const row = t1 * cells;
+      for (let y = 0; y < Hpx; y++) {
+        const c = rowCell[y], hs = headState[c];
+        const col = hs >= 0 ? st[hs] : (tr.frames[row + c] ? one : zero);
+        const o = (y * Wpx + x) * 4;
+        data[o] = col[0]; data[o + 1] = col[1]; data[o + 2] = col[2]; data[o + 3] = 255;
+      }
+      for (let u = t0; u <= t1; u++) headState[tr.heads[u]] = -1;
+    }
+    ctx.putImageData(img, 0, 0);
+  }
+
+  function updateReadout(tr) {
+    const n = tr.n, res = tr.result, p = predict(n), r = n % 3;
+    readout.textContent = '';
+    const l1 = document.createElement('p'), l2 = document.createElement('p');
+    let ok;
+    if (res.kind === 'epoch') {
+      l1.textContent = `Start: a block of ${fmt(n)} ones. After ${fmt(res.steps)} steps the tape is a block of ${fmt(res.ones)} ones again.`;
+      ok = p.kind === 'epoch' && p.steps === res.steps && p.next === res.ones && res.solid;
+      l2.append(`${fmt(n)} mod 3 = ${r}, so the rule predicts ${fmt(p.next)} ones after ${fmt(p.steps)} steps. `);
+    } else if (res.kind === 'halt') {
+      l1.textContent = `Start: a block of ${fmt(n)} ones. The machine halts after ${fmt(res.steps)} steps, leaving ${fmt(res.ones)} ones on the tape.`;
+      ok = p.kind === 'halt' && p.steps === res.steps && p.ones === res.ones;
+      l2.append(`${fmt(n)} mod 3 = ${r}, so the rule predicts a halt after ${fmt(p.steps)} steps with ${fmt(p.ones)} ones. `);
+    } else { l1.textContent = 'The round did not finish within 4,000,000 steps.'; ok = false; }
+    const badge = document.createElement('span');
+    badge.className = ok ? 'ok' : 'no'; badge.textContent = ok ? '✓ matches the machine' : '✕ does not match';
+    l2.append(badge);
+    readout.append(l1, l2);
+    canvas.setAttribute('aria-label', `Space-time diagram of the machine running ${fmt(res.steps)} steps from a block of ${fmt(n)} ones. ${res.kind === 'halt' ? 'It halts.' : 'It ends as a block of ' + fmt(res.ones) + ' ones.'}`);
+  }
+  function showRound(n) {
+    n = Math.max(1, Math.min(150, Math.round(n)));
+    input.value = n;
+    current = traceRound(n);
+    drawRound(); updateReadout(current);
+    chipsEl.querySelectorAll('.chip').forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.n) === n)));
+  }
+  $('#nform').addEventListener('submit', (e) => { e.preventDefault(); const v = parseInt(input.value, 10); if (!Number.isNaN(v)) showRound(v); });
+  if ('ResizeObserver' in window) { let lw = 0; new ResizeObserver(() => { const w = canvas.parentElement.clientWidth; if (w !== lw) { lw = w; drawRound(); } }).observe(canvas.parentElement); }
+  if (window.matchMedia) { const mq = window.matchMedia('(prefers-color-scheme: dark)'); if (mq.addEventListener) mq.addEventListener('change', drawRound); }
+  new MutationObserver(drawRound).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  showRound(37);
+
+  /* ---------- run all of it ---------- */
+  const runBtn = $('#runall'), out = $('#runall-out'), bar = $('#bar'), fill = $('#bar-fill');
+  runBtn.addEventListener('click', () => {
+    runBtn.disabled = true; bar.hidden = false; fill.style.width = '0%';
+    const run = new FullRun(), t0 = performance.now(), TOTAL = 47176870;
+    const tick = () => {
+      const r = run.step(3000000);
+      fill.style.width = Math.min(100, Math.floor(100 * r.steps / TOTAL)) + '%';
+      if (!r.halted && r.steps < 90000000) { out.textContent = `Running… ${fmt(r.steps)} steps`; setTimeout(tick, 0); return; }
+      const secs = ((performance.now() - t0) / 1000).toFixed(2);
+      const ok = r.halted && r.steps === TOTAL && r.ones === 4098 && r.cells === 12289;
+      out.textContent = '';
+      const s = document.createElement('strong'); s.className = ok ? 'ok' : 'no'; s.textContent = ok ? 'Matches. ' : 'Does not match. ';
+      out.append(s, `${fmt(r.steps)} steps, ${fmt(r.ones)} ones on the tape, ${fmt(r.cells)} cells visited, in ${secs} s.`);
+      fill.style.width = '100%'; runBtn.disabled = false; runBtn.textContent = 'Run it again';
+    };
+    setTimeout(tick, 20);
+  });
+  $('#copy').addEventListener('click', async () => {
+    const b = $('#copy'), code = $('#rulestr');
+    try { await navigator.clipboard.writeText(code.textContent); b.textContent = 'Copied'; }
+    catch (e) { const r = document.createRange(); r.selectNodeContents(code); const s = getSelection(); s.removeAllRanges(); s.addRange(r); b.textContent = 'Press Ctrl+C'; }
+    setTimeout(() => { b.textContent = 'Copy'; }, 1800);
+  });
+
+  /* ---------- the orbit ---------- */
+  const ORB = orbit();
+  responsive($('#orbit-chart'), (w) => {
+    const rows = ORB.rows, h = w < 520 ? 300 : 360, L = 58, R = 24, T = 30, B = 62;
+    const pw = w - L - R, ph = h - T - B;
+    const X = (i) => L + pw * i / (rows.length - 1), Y = (n) => T + ph * (1 - Math.log10(n) / Math.log10(20000));
+    const svg = S('svg', { viewBox: `0 0 ${w} ${h}`, width: w, height: h, role: 'img', 'aria-label': 'Block size at the start of each of the 15 rounds on a log scale, rising from 3 to 12,287' });
+    [1, 10, 100, 1000, 10000].forEach((v) => svg.append(S('line', { x1: L - 6, x2: w - R, y1: Y(v), y2: Y(v), class: 'grid' }), S('text', { x: L - 10, y: Y(v) + 4, class: 'axis', 'text-anchor': 'end' }, fmt(v))));
+    svg.append(S('polyline', { points: rows.map((r, i) => `${X(i)},${Y(r.n)}`).join(' '), class: 'orbit-line', fill: 'none' }));
+    const thin = pw / (rows.length - 1) < 46 ? 2 : 1;
+    rows.forEach((r, i) => {
+      svg.append(S('circle', { cx: X(i), cy: Y(r.n), r: 6, class: 'pt pt' + r.r }));
+      const show = i % thin === 0 || i === rows.length - 1;
+      if (!show) return;
+      const above = thin === 2 ? true : i % 2 === 0;
+      svg.append(S('text', { x: Math.min(X(i), w - R - 8), y: Y(r.n) + (above ? -13 : 23), class: 'lab', 'text-anchor': 'middle' }, fmt(r.n)));
+      svg.append(S('text', { x: X(i), y: h - B + 24, class: 'axis', 'text-anchor': 'middle' }, compact(r.t)));
+    });
+    svg.append(S('text', { x: L - 10, y: h - B + 24, class: 'axis', 'text-anchor': 'end' }, 'step'));
+    return svg;
+  });
+  (function orbitText() {
+    const last = ORB.rows[ORB.rows.length - 1], prev = ORB.rows[ORB.rows.length - 2];
+    const share = (last.t - prev.t) / ORB.total;
+    $('#orbit-text').textContent = `Following the rule from n = 3 gives ${ORB.rows.slice(0, 6).map((r) => fmt(r.n)).join(', ')} and so on, ${ORB.rows.length} blocks in all. Each is about 5/3 the size of the last and takes about 25/9 times as long to build, so nearly all of the steps happen in the last few rounds. The final round, from ${fmt(prev.n)} to ${fmt(last.n)}, takes ${Math.round(share * 100)}% of the whole run. ${fmt(last.n)} leaves remainder 2 when divided by 3, so the machine halts ${fmt(last.n + 2)} steps later with ${fmt(ORB.finalOnes)} ones on the tape. Adding the rounds up from the formulas gives ${fmt(ORB.total)} steps, the same as the full run.`;
+  })();
+
+  /* ---------- survival ---------- */
+  setTimeout(() => {
+    const N = 1000000, G = survival(N), K = 26;
+    responsive($('#surv-chart'), (w) => {
+      const h = w < 520 ? 260 : 300, L = 64, R = 20, T = 22, B = 48, pw = w - L - R, ph = h - T - B;
+      const X = (k) => L + pw * k / K, Y = (p) => T + ph * (1 - (Math.log10(p) + 5) / 5);
+      const svg = S('svg', { viewBox: `0 0 ${w} ${h}`, width: w, height: h, role: 'img', 'aria-label': 'Share of starting block sizes that survive at least k rounds, tracking (2/3)^k on a log scale' });
+      [[1, '100%'], [0.1, '10%'], [0.01, '1%'], [0.001, '0.1%'], [0.0001, '0.01%'], [0.00001, '0.001%']].forEach(([v, l]) => svg.append(S('line', { x1: L - 6, x2: w - R, y1: Y(v), y2: Y(v), class: 'grid' }), S('text', { x: L - 10, y: Y(v) + 4, class: 'axis', 'text-anchor': 'end' }, l)));
+      svg.append(S('polyline', { points: Array.from({ length: K + 1 }, (_, k) => `${X(k)},${Y(Math.pow(2 / 3, k))}`).join(' '), class: 'model' }));
+      for (let k = 1; k <= K; k++) if (G[k] > 0) svg.append(S('circle', { cx: X(k), cy: Y(G[k]), r: 4.5, class: 'pt pt0' }));
+      for (let k = 0; k <= K; k += (w < 520 ? 5 : 2)) svg.append(S('text', { x: X(k), y: h - B + 22, class: 'axis', 'text-anchor': 'middle' }, String(k)));
+      svg.append(S('text', { x: L + pw / 2, y: h - 6, class: 'axis', 'text-anchor': 'middle' }, 'rounds survived, k'));
+      svg.append(S('circle', { cx: X(14), cy: Y(G[14]), r: 9, class: 'ring' }));
+      svg.append(S('text', { x: X(14) + 14, y: Y(G[14]) - 10, class: 'lab' }, 'k = 14'));
+      return svg;
+    });
+    $('#surv-cap').textContent = `Share of starting block sizes from 1 to ${fmt(N)} that survive at least k rounds (dots), against (2/3)^k (dashed line). At k = 14: ${(G[14] * 100).toFixed(3)}% observed, ${(Math.pow(2 / 3, 14) * 100).toFixed(3)}% predicted.`;
+  }, 0);
+
+  /* ---------- Antihydra ---------- */
+  let antiRedrawA = null, antiRedrawB = null, antiA = null, antiB = null;
+  function antiSVG(data, first) {
+    return (w) => {
+      const h = w < 520 ? 240 : 280, L = 52, R = 18, T = 20, B = 40, pw = w - L - R, ph = h - T - B;
+      const pts = first ? data.pts.filter((p) => p[0] <= 60) : data.pts;
+      const xmax = pts[pts.length - 1][0], bmax = Math.max(...pts.map((p) => p[1])) * 1.06 + 2, bmin = -Math.max(2, bmax * 0.08);
+      const X = (n) => L + pw * (n - 1) / (xmax - 1), Y = (b) => T + ph * (1 - (b - bmin) / (bmax - bmin));
+      const svg = S('svg', { viewBox: `0 0 ${w} ${h}`, width: w, height: h, role: 'img', 'aria-label': first ? 'Antihydra counter over the first 60 rounds, always well above zero' : 'Antihydra counter over many rounds, rising steadily away from zero' });
+      const step = Math.pow(10, Math.floor(Math.log10(bmax / 3)));
+      const tickStep = bmax / 3 > 5 * step ? 5 * step : bmax / 3 > 2 * step ? 2 * step : step;
+      for (let v = 0; v <= bmax; v += tickStep) svg.append(S('line', { x1: L - 5, x2: w - R, y1: Y(v), y2: Y(v), class: 'grid' }), S('text', { x: L - 9, y: Y(v) + 4, class: 'axis', 'text-anchor': 'end' }, fmt(v)));
+      svg.append(S('line', { x1: L - 5, x2: w - R, y1: Y(0), y2: Y(0), class: 'zero-line' }));
+      svg.append(S('text', { x: w - R, y: Y(0) - 6, class: 'zero-lab', 'text-anchor': 'end' }, 'halts below this line'));
+      svg.append(S('polyline', { points: pts.map((p) => `${X(p[0])},${Y(p[1])}`).join(' '), class: 'series' }));
+      if (!first) svg.append(S('line', { x1: X(1), y1: Y(0.5), x2: X(xmax), y2: Y(xmax / 2), class: 'model' }));
+      const ticks = first ? [1, 20, 40, 60] : [0, 1, 2, 3, 4].map((i) => Math.max(1, Math.round(xmax * i / 4)));
+      ticks.forEach((n) => svg.append(S('text', { x: X(n), y: h - B + 18, class: 'axis', 'text-anchor': n === xmax ? 'end' : (n === 1 ? 'start' : 'middle') }, fmt(n))));
+      svg.append(S('text', { x: L + pw / 2, y: h - 4, class: 'axis', 'text-anchor': 'middle' }, first ? 'round' : 'round (dashed line: half the round number)'));
+      return svg;
+    };
+  }
+  function runAnti(N) {
+    $('#anti-cap').textContent = 'Working…';
+    setTimeout(() => {
+      antiB = antihydra(N, 500);
+      if (!antiA) antiA = antihydra(60, 60);
+      if (antiRedrawA) antiRedrawA(); if (antiRedrawB) antiRedrawB();
+      $('#anti-cap').textContent = `The counter over ${fmt(N)} rounds. After ${fmt(N)} rounds it stands at ${fmt(antiB.finalB)}; half the round number is ${fmt(N / 2)}. After round 2 the counter has never come closer to zero than ${fmt(antiB.bmin)}.`;
+    }, 20);
+  }
+  antiA = antihydra(60, 60);
+  const aWrapA = $('#anti-a'), aWrapB = $('#anti-b');
+  antiRedrawA = responsive(aWrapA, (w) => antiSVG(antiA, true)(w));
+  antiRedrawB = responsive(aWrapB, (w) => antiB ? antiSVG(antiB, false)(w) : S('svg', { width: w, height: 240 }));
+  document.querySelectorAll('[data-rounds]').forEach((b) => b.addEventListener('click', () => {
+    document.querySelectorAll('[data-rounds]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    runAnti(Number(b.dataset.rounds));
+  }));
+  setTimeout(() => runAnti(20000), 0);
+
+  /* ---------- the scorecard ---------- */
+  const CLAIMS = [
+    ['BB(1): 1 step, 1 one', .99, 1], ['BB(2): 6 steps, 4 ones, one machine does both', .93, 1],
+    ['BB(3): most steps is 21', .97, 1], ['BB(3): most ones is 6', .97, 1],
+    ['3 states: the 21-step machine leaves 5 ones; the 6-ones machine takes 11 steps', .75, 0],
+    ['BB(4): most steps is 107', .97, 1], ['BB(4): most ones is 13', .97, 1],
+    ['the same 4-state machine does both', .90, 1], ['a second 13-ones machine takes 96 steps', .55, 1],
+    ['5-state champion: 47,176,870 steps', .93, 1], ['it leaves 4,098 ones', .92, 1],
+    ['its exact rule table', .75, 1], ['it visits 12,289 cells', .75, 1],
+    ['final tape: 4,098 ones and 8,191 zeros', .65, 1], ['BB(5) settled in 2024, proof checked in Coq', .90, 1],
+    ['a 2025 six-state record above 2↑↑↑5', .70, 1], ['Antihydra: six states, Collatz-like, halting open', .85, 1],
+    ["Antihydra's exact rule table", .20, 0], ['the 5-state search space left 88,664,064 undecided machines', .75, 1],
+    ['no 4-state machine halts between 108 and 100,000 steps', .99, 1]
+  ];
+  responsive($('#dots-chart'), (w) => {
+    const L = 22, R = 22, T = 14, B = 44, r = 7, lo = 0.15, hi = 1.0;
+    const X = (p) => L + (w - L - R) * (p - lo) / (hi - lo);
+    const rowsX = [], place = [];
+    CLAIMS.map((c, i) => ({ c, i })).sort((a, b) => a.c[1] - b.c[1] || a.i - b.i).forEach(({ c }) => {
+      const x = X(c[1]); let row = 0;
+      while (rowsX[row] && rowsX[row].some((xx) => Math.abs(xx - x) < 2 * r + 3)) row++;
+      (rowsX[row] = rowsX[row] || []).push(x); place.push({ c, x, row });
+    });
+    const nrows = rowsX.length, h = T + nrows * (2 * r + 4) + B, base = h - B;
+    const svg = S('svg', { viewBox: `0 0 ${w} ${h}`, width: w, height: h, role: 'img', 'aria-label': '20 predictions placed by stated confidence; 18 came out true, 2 false' });
+    [0.2, 0.4, 0.6, 0.8, 1.0].forEach((p) => svg.append(S('line', { x1: X(p), x2: X(p), y1: T, y2: base + 6, class: 'grid' }), S('text', { x: X(p), y: base + 24, class: 'axis', 'text-anchor': p === 1 ? 'end' : 'middle' }, Math.round(p * 100) + '%')));
+    svg.append(S('line', { x1: L, x2: w - R, y1: base + 6, y2: base + 6, class: 'grid' }));
+    svg.append(S('text', { x: L + (w - L - R) / 2, y: h - 4, class: 'axis', 'text-anchor': 'middle' }, 'confidence I gave beforehand'));
+    place.forEach(({ c, x, row }) => {
+      const cy = base - r - 2 - row * (2 * r + 4), ok = c[2] === 1;
+      const shape = ok ? S('circle', { cx: x, cy, r, class: 'dt' }) : S('path', { d: `M${x} ${cy - r - 2} L${x + r + 2} ${cy} L${x} ${cy + r + 2} L${x - r - 2} ${cy} Z`, class: 'df' });
+      shape.append(S('title', {}, `${c[0]} (${Math.round(c[1] * 100)}%, ${ok ? 'true' : 'false'})`));
+      svg.append(shape);
+    });
+    return svg;
+  });
+  (function claimsTable() {
+    const body = $('#claims-body');
+    CLAIMS.slice().sort((a, b) => a[2] - b[2] || b[1] - a[1]).forEach((c) => {
+      const tr = document.createElement('tr');
+      const a = document.createElement('td'); a.textContent = c[0];
+      const b = document.createElement('td'); b.textContent = Math.round(c[1] * 100) + '%';
+      const d = document.createElement('td'); d.textContent = c[2] ? 'true' : 'false'; d.className = c[2] ? 'ok' : 'no';
+      tr.append(a, b, d); body.append(tr);
+    });
+  })();
+})();
+</script>

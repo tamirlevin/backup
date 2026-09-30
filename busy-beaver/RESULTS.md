@@ -76,8 +76,8 @@ chose the items, so they skew toward famous facts.
 Two of the hits were at the edge of the interval (B1, B6). Reading B5 and B6 as "largest value strictly
 below the champion's" (the champion's S is unique in both cases).
 
-Where the misses came from. A10b: I had the skeleton of Antihydra's table (8 of 12 entries) and invented the
-rest; the invented version looked exactly as plausible as the true one and only running it exposed it. The
+Where the misses came from. A10b: 8 of the 12 entries I wrote down for Antihydra's table were right and 4 were
+wrong; the wrong version looked exactly as plausible as the true one and only running it exposed it. The
 5-state champion, which is far more widely written about, I had exactly right. A3c: I stated a specific
 number as if it identified a unique machine without having checked whether it did.
 
@@ -205,4 +205,4 @@ Sources (as cited by the search tool; I did not open most of them):
 
 `PREREGISTRATION.md` (committed first) · `bb.c` enumerator · `brute.c` brute force · `deciders.c` ·
 `sim.c` simulator and snapshotter · `tools/` theory test, Antihydra check, figure and scoring scripts ·
-`results/` raw outputs · `figures/` · `run_all.sh` regenerates `results/` (about 10 minutes on 4 cores).
+`results/` raw outputs · `figures/` (`share_card.png` is a 16:9 image made from the page) · `site/` the single-file interactive page and `core_test.js`, which checks every number it states (`node site/core_test.js`) · `run_all.sh` regenerates `results/` (about 10 minutes on 4 cores).
