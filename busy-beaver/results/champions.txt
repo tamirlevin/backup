@@ -1,0 +1,12 @@
+machine=1RB1LB_1LA--- states=2
+halted=1 steps=6 ones=4 visited_cells=4 (lo=-2 hi=1) head=-1 state=B
+final tape within visited span: ones=4 zeros=0
+machine=1RB---_1LB0RC_1LC1LA states=3
+halted=1 steps=21 ones=5 visited_cells=5 (lo=-1 hi=3) head=0 state=A
+final tape within visited span: ones=5 zeros=0
+machine=1RB1LB_1LA0LC_---1LD_1RD0RA states=4
+halted=1 steps=107 ones=13 visited_cells=14 (lo=-10 hi=3) head=-10 state=C
+final tape within visited span: ones=13 zeros=1
+machine=1RB1LC_1RC1RB_1RD0LE_1LA1LD_---0LA states=5
+halted=1 steps=47176870 ones=4098 visited_cells=12289 (lo=-12243 hi=45) head=-12243 state=E
+final tape within visited span: ones=4098 zeros=8191

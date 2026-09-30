@@ -1,0 +1,5 @@
+N=2 H=100000 leaves=42
+late halters : 0
+cyclers      : 6  (decided by step: <100:6 <1e3:0 <1e4:0 >=1e4:0, latest 7)
+transl.cycl. : 36  (decided by step: <100:36 <1e3:0 <1e4:0 >=1e4:0, latest 8)
+undecided    : 0  (0.0000% of leaves)

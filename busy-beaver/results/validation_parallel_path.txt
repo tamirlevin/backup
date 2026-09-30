@@ -1,0 +1,9 @@
+n=2 BB_QDEPTH=1000 N=2 CAP=10000 N_sim=61 N_halt=19 N_cap=42
+n=2 BB_QDEPTH=2    N=2 CAP=10000 N_sim=61 N_halt=19 N_cap=42
+n=2 BB_QDEPTH=3    N=2 CAP=10000 N_sim=61 N_halt=19 N_cap=42
+n=2 BB_QDEPTH=4    N=2 CAP=10000 N_sim=61 N_halt=19 N_cap=42
+n=3 BB_QDEPTH=1000 N=3 CAP=10000 N_sim=5417 N_halt=1772 N_cap=3645
+n=3 BB_QDEPTH=2    N=3 CAP=10000 N_sim=5417 N_halt=1772 N_cap=3645
+n=3 BB_QDEPTH=3    N=3 CAP=10000 N_sim=5417 N_halt=1772 N_cap=3645
+n=3 BB_QDEPTH=4    N=3 CAP=10000 N_sim=5417 N_halt=1772 N_cap=3645
+n=4: serial run and parallel run give identical S:maxSigma:nodes tables (N_sim=858909 N_halt=249693 N_cap=609216)

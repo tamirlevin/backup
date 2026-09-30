@@ -1,0 +1,2 @@
+n=2: identical set of achievable S, and identical max Sigma at every S (6 values of S)
+n=3: identical set of achievable S, and identical max Sigma at every S (21 values of S)

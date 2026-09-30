@@ -1,0 +1,5 @@
+------ S=1 Sigma=1
+N=1 CAP=10000 N_sim=3 N_halt=1 N_cap=2
+S histogram tail (largest 12 distinct S: S:count): 1:1
+Sigma histogram tail (largest 8 distinct: Sigma:count): 1:1
+S=1 maxSigma=1 nodes=1

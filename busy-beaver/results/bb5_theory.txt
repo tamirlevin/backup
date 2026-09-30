@@ -1,0 +1,6 @@
+configs tested: 250, mismatches: 0
+  n mod 3 = 0: 83/83 match   [next block (5n+12)/3, steps (5n^2+33n+45)/9]
+  n mod 3 = 1: 84/84 match   [next block (5n+16)/3, steps (5n^2+41n+71)/9]
+  n mod 3 = 2: 83/83 match   [HALT after n+2 steps, (n-2)/3+3 ones]
+theory-only reconstruction of the champion: orbit [3, 9, 19, 37, 67, 117, 199, 337, 567, 949, 1587, 2649, 4419, 7369, 12287]
+  total steps S = 47176870  final ones = 4098  -> matches simulation (47176870, 4098): True

@@ -1,0 +1,16 @@
+0RB---_1LA1RB S=6 Sigma=2
+1RB1LA_0LA--- S=5 Sigma=2
+1RB---_0LB1LA S=6 Sigma=2
+1RB0LB_1LA--- S=6 Sigma=3
+1RB1LA_1LA--- S=5 Sigma=3
+1RB1LB_1LA--- S=6 Sigma=4
+1RB---_1LB1LA S=6 Sigma=3
+N=2 CAP=10000 N_sim=61 N_halt=19 N_cap=42
+S histogram tail (largest 12 distinct S: S:count): 6:5 5:2 4:5 3:4 2:2 1:1
+Sigma histogram tail (largest 8 distinct: Sigma:count): 4:1 3:3 2:8 1:7
+S=6 maxSigma=4 nodes=5
+S=5 maxSigma=3 nodes=2
+S=4 maxSigma=2 nodes=5
+S=3 maxSigma=2 nodes=4
+S=2 maxSigma=2 nodes=2
+S=1 maxSigma=1 nodes=1

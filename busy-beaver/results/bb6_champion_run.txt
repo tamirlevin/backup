@@ -1,0 +1,2 @@
+machine=1RB1RA_1RC---_1LD0RF_1RA0LE_0LD1RC_1RA0RE states=6
+halted=0 steps=4000000000 ones=77570 visited_cells=77691 (lo=-10 hi=77680) head=72696 state=D

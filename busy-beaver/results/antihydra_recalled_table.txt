@@ -1,0 +1,3 @@
+machine=1RB1RA_0LC1LE_1LD0LC_1LA1LB_1LF0LE_---0LA states=6
+halted=1 steps=10 ones=4 visited_cells=7 (lo=-5 hi=1) head=-5 state=F
+final tape within visited span: ones=4 zeros=3

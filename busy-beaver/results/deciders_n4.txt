@@ -1,0 +1,5 @@
+N=4 H=100000 leaves=609216
+late halters : 0
+cyclers      : 87754  (decided by step: <100:87750 <1e3:4 <1e4:0 >=1e4:0, latest 101)
+transl.cycl. : 500902  (decided by step: <100:500740 <1e3:162 <1e4:0 >=1e4:0, latest 946)
+undecided    : 20560  (3.3748% of leaves)

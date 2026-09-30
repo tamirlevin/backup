@@ -1,0 +1,13 @@
+epochs read from the machine: 24 | middle block q == a_{k+1} - 5 : 24 | left block p == counter b_k : 24
+sequence a_k: [8, 12, 18, 27, 40, 60, 90, 135, 202, 303] ...
+last epoch at step 10515725981 (1.05e+10); a = 132387
+
+map iterated far past what the machine can reach (halts iff the counter b = 2E - O would go below 0):
+n=      10  b=      11  E=       7  O=       3  b/n=1.10000
+n=     100  b=      53  E=      51  O=      49  b/n=0.53000
+n=    1000  b=     497  E=     499  O=     501  b/n=0.49700
+n=   10000  b=    4862  E=    4954  O=    5046  b/n=0.48620
+n=  100000  b=   50477  E=   50159  O=   49841  b/n=0.50477
+n= 1000000  b=  498503  E=  499501  O=  500499  b/n=0.49850
+n= 2000000  b=  996805  E=  998935  O= 1001065  b/n=0.49840
+smallest b over n = 2..N: 4 at n = 2 | bits in a at the end: 1169928 | 69s
